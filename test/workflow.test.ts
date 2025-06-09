@@ -1,5 +1,9 @@
 import tap from 'tap';
-import server from '../src/server';
+function createServer(dir: string) {
+  process.env.WORKFLOWS_DIR = dir;
+  delete require.cache[require.resolve('../src/server')];
+  return require('../src/server').default as any;
+}
 import * as crypto from 'crypto';
 import { WorkflowConfig, WorkflowType, WorkflowEvent } from 'rootsby/types';
 
@@ -27,6 +31,7 @@ const config: WorkflowConfig = {
 };
 
 tap.test('create and run workflow', async t => {
+  const server = createServer(t.testdir());
   const createRes = await server.inject({
     method: 'POST',
     url: '/workflows',
@@ -55,4 +60,28 @@ tap.test('create and run workflow', async t => {
     ],
     'events order'
   );
+  await server.close();
+});
+
+tap.test('workflow persists across server instances', async t => {
+  const dir = t.testdir();
+  const server1 = createServer(dir);
+  const res = await server1.inject({
+    method: 'POST',
+    url: '/workflows',
+    payload: { config },
+  });
+  t.equal(res.statusCode, 201, 'workflow stored');
+  await server1.close();
+
+  const server2 = createServer(dir);
+  const listRes = await server2.inject({ method: 'GET', url: '/workflows' });
+  t.same(listRes.json().map((w: any) => w.id), [config.id], 'listed after restart');
+
+  const getRes = await server2.inject({ method: 'GET', url: `/workflows/${config.id}` });
+  const stored = getRes.json();
+  t.equal(stored.id, config.id, 'id persisted');
+  t.equal(stored.name, config.name, 'name persisted');
+  t.equal(stored.functions.length, config.functions.length, 'functions count persisted');
+  await server2.close();
 });

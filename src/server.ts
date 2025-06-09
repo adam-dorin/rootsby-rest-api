@@ -1,11 +1,14 @@
 import Fastify from 'fastify';
 import { Rootsby } from 'rootsby/workflow';
 import type { WorkflowConfig } from 'rootsby/types';
+import path from 'path';
+import WorkflowStorage from './storage';
 
 const server = Fastify({ logger: true });
 
-// simple in-memory store
-const workflows = new Map<string, WorkflowConfig>();
+const storage = new WorkflowStorage(
+  process.env.WORKFLOWS_DIR || path.join(process.cwd(), 'data')
+);
 
 interface CreateWorkflowBody {
   config: WorkflowConfig;
@@ -16,16 +19,16 @@ server.post<{ Body: CreateWorkflowBody }>('/workflows', async (request, reply) =
   if (!config || !config.id) {
     return reply.code(400).send({ error: 'config with id required' });
   }
-  workflows.set(config.id, config);
+  await storage.save(config);
   return reply.code(201).send({ id: config.id });
 });
 
 server.get('/workflows', async () => {
-  return Array.from(workflows.values());
+  return storage.list();
 });
 
 server.get<{ Params: { id: string } }>('/workflows/:id', async (request, reply) => {
-  const workflow = workflows.get(request.params.id);
+  const workflow = await storage.get(request.params.id);
   if (!workflow) {
     return reply.code(404).send({ error: 'not found' });
   }
@@ -33,7 +36,7 @@ server.get<{ Params: { id: string } }>('/workflows/:id', async (request, reply) 
 });
 
 server.post<{ Params: { id: string }; Body: { input?: any } }>('/workflows/:id/run', async (request, reply) => {
-  const workflow = workflows.get(request.params.id);
+  const workflow = await storage.get(request.params.id);
   if (!workflow) {
     return reply.code(404).send({ error: 'not found' });
   }
