@@ -28,6 +28,16 @@ export default class WorkflowStorage {
     }
   }
 
+  async delete(id: string): Promise<void> {
+    try {
+      await fs.unlink(this.filePath(id));
+    } catch (err: any) {
+      if (err && err.code !== "ENOENT") {
+        throw err;
+      }
+    }
+  }
+
   async list(): Promise<WorkflowConfig[]> {
     await fs.mkdir(this.dir, { recursive: true });
     const files = await fs.readdir(this.dir);

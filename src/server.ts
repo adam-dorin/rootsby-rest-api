@@ -41,14 +41,15 @@ server.put<{ Params: { id: string }; Body: CreateWorkflowBody }>("/workflows/:id
     return reply.code(400).send({ error: "config id mismatch" });
   }
   const workflow = await storage.get(id);
-  if (!workflow) {
-    return reply.code(404).send({ error: "not found" });
-  }
-  if (workflow.id !== id) {
-    return reply.code(404).send({ error: "not found" });
-  }
+  // if (!workflow) {
+  //   return reply.code(404).send({ error: "not found" });
+  // }
+  // if (workflow.id !== id) {
+  //   return reply.code(404).send({ error: "not found" });
+  // }
+  await storage.save(config);
   // workflow.set(id, config);
-  return { id };
+  return await storage.get(id);
 });
 // TODO: improve this
 server.delete<{ Params: { id: string } }>("/workflows/:id", async (request, reply) => {
@@ -57,10 +58,7 @@ server.delete<{ Params: { id: string } }>("/workflows/:id", async (request, repl
   if (!workflow) {
     return reply.code(404).send({ error: "not found" });
   }
-  // if (!workflow.has(request.params.id)) {
-  //   return reply.code(404).send({ error: 'not found' });
-  // }
-  // workflow.delete(request.params.id);
+  await storage.delete(id);
   return reply.code(204).send();
 });
 
