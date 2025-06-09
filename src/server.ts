@@ -69,7 +69,7 @@ server.put<{ Params: { id: string }; Body: CreateWorkflowBody }>("/workflows/:id
     return reply.code(400).send({ error: "config id mismatch" });
   }
   const workflow = await storage.get(id);
-  // This beaks tests
+  // This breaks tests
   // if (!workflow) {
   //   return reply.code(404).send({ error: "not found" });
   // }
