@@ -14,6 +14,21 @@ using the `WORKFLOWS_DIR` environment variable (defaults to `./data`).
 - `npm start` – run the compiled server.
 - `npm test` – build the project and run integration tests with `tap`.
 
+## Configuration
+
+The server listens on the host and port specified by the environment variables:
+
+- `HOST` – defaults to `0.0.0.0`.
+- `PORT` – defaults to `3000`.
+
+For example:
+
+```bash
+HOST=127.0.0.1 PORT=8080 npm start
+```
+
+will start the server on `http://127.0.0.1:8080`.
+
 ## Endpoints
 
 ### `POST /workflows`
@@ -39,3 +54,10 @@ Retrieve a single workflow configuration.
 ### `POST /workflows/:id/run`
 Execute a workflow. Optional input can be passed as `{ "input": { ... } }`.
 Events generated during execution are returned in the response.
+
+### `PUT /workflows/:id`
+Replace an existing workflow configuration. The body is identical to the
+creation endpoint and the `id` must match the path parameter.
+
+### `DELETE /workflows/:id`
+Remove a workflow.
