@@ -2,6 +2,8 @@
 
 This project provides a simple Fastify server written in TypeScript that allows creating and running workflows powered by [Rootsby](https://www.npmjs.com/package/rootsby).
 
+The application is developed and tested against the current Node.js LTS (v22).
+
 ## Scripts
 
 - `npm run dev` – start the server in development using `ts-node-dev`.

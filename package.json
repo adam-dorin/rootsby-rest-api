@@ -6,19 +6,22 @@
     "dev": "ts-node-dev --respawn src/server.ts",
     "start": "node build/server.js",
     "build": "tsc",
-    "test": "tap --no-coverage build/test/**/*.test.js",
+    "test": "tap --disable-coverage build/test/**/*.test.js",
     "pretest": "npm run build"
   },
   "dependencies": {
-    "fastify": "^4.28.2",
-    "rootsby": "^0.1.22"
+    "fastify": "^5.3.3",
+    "rootsby": "0.1.21"
   },
   "devDependencies": {
-    "@types/node": "^20.11.17",
-    "@types/tap": "^15.0.12",
-    "tap": "^16.3.0",
+    "@types/node": "^22.15.30",
+    "@types/tap": "^18.0.0",
+    "tap": "^21.1.0",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.2.2"
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }
