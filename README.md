@@ -4,6 +4,9 @@ This project provides a simple Fastify server written in TypeScript that allows 
 
 The application is developed and tested against the current Node.js LTS (v22).
 
+Workflow configurations are persisted on disk. The directory can be customised
+using the `WORKFLOWS_DIR` environment variable (defaults to `./data`).
+
 ## Scripts
 
 - `npm run dev` – start the server in development using `ts-node-dev`.
