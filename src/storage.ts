@@ -1,6 +1,6 @@
-import { promises as fs } from 'fs';
-import path from 'path';
-import type { WorkflowConfig } from 'rootsby/types';
+import { promises as fs } from "fs";
+import path from "path";
+import type { WorkflowConfig } from "rootsby/types";
 
 export default class WorkflowStorage {
   constructor(private dir: string) {
@@ -13,15 +13,15 @@ export default class WorkflowStorage {
 
   async save(workflow: WorkflowConfig): Promise<void> {
     await fs.mkdir(this.dir, { recursive: true });
-    await fs.writeFile(this.filePath(workflow.id), JSON.stringify(workflow, null, 2), 'utf8');
+    await fs.writeFile(this.filePath(workflow.id), JSON.stringify(workflow, null, 2), "utf8");
   }
 
   async get(id: string): Promise<WorkflowConfig | undefined> {
     try {
-      const data = await fs.readFile(this.filePath(id), 'utf8');
+      const data = await fs.readFile(this.filePath(id), "utf8");
       return JSON.parse(data);
     } catch (err: any) {
-      if (err && err.code === 'ENOENT') {
+      if (err && err.code === "ENOENT") {
         return undefined;
       }
       throw err;
@@ -33,8 +33,8 @@ export default class WorkflowStorage {
     const files = await fs.readdir(this.dir);
     const result: WorkflowConfig[] = [];
     for (const file of files) {
-      if (file.endsWith('.json')) {
-        const data = await fs.readFile(path.join(this.dir, file), 'utf8');
+      if (file.endsWith(".json")) {
+        const data = await fs.readFile(path.join(this.dir, file), "utf8");
         result.push(JSON.parse(data));
       }
     }
