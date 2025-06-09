@@ -37,8 +37,8 @@ Create a workflow by providing a Rootsby `WorkflowConfig` in the body:
 ```json
 {
   "config": {
-    "id": "<uuid>",
-    "name": "test",
+    "id": "e26d5294-f540-45a8-9d95-b5d94bab5d23",
+    "name": "example",
     "type": "ShortRunning",
     "functions": []
   }
@@ -49,7 +49,7 @@ Example request:
 ```bash
 curl -X POST http://localhost:3000/workflows \
   -H "Content-Type: application/json" \
-  -d '{"config": {"id":"<uuid>","name":"test","type":"ShortRunning","functions":[]}}'
+  -d '{"config": {"id":"e26d5294-f540-45a8-9d95-b5d94bab5d23","name":"example","type":"ShortRunning","functions":[]}}'
 ```
 
 ### `GET /workflows`
@@ -63,7 +63,7 @@ curl http://localhost:3000/workflows
 Retrieve a single workflow configuration.
 
 ```bash
-curl http://localhost:3000/workflows/<id>
+curl http://localhost:3000/workflows/e26d5294-f540-45a8-9d95-b5d94bab5d23
 ```
 
 ### `POST /workflows/:id/run`
@@ -71,9 +71,9 @@ Execute a workflow. Optional input can be passed as `{ "input": { ... } }`.
 Events generated during execution are returned in the response.
 
 ```bash
-curl -X POST http://localhost:3000/workflows/<id>/run \
+curl -X POST http://localhost:3000/workflows/e26d5294-f540-45a8-9d95-b5d94bab5d23/run \
   -H "Content-Type: application/json" \
-  -d '{"input":{}}'
+  -d '{"input":{"message":"hello"}}'
 ```
 
 ### `PUT /workflows/:id`
@@ -81,14 +81,14 @@ Replace an existing workflow configuration. The body is identical to the
 creation endpoint and the `id` must match the path parameter.
 
 ```bash
-curl -X PUT http://localhost:3000/workflows/<id> \
+curl -X PUT http://localhost:3000/workflows/e26d5294-f540-45a8-9d95-b5d94bab5d23 \
   -H "Content-Type: application/json" \
-  -d '{"config":{...}}'
+  -d '{"config": {"id":"e26d5294-f540-45a8-9d95-b5d94bab5d23","name":"updated","type":"ShortRunning","functions":[]}}'
 ```
 
 ### `DELETE /workflows/:id`
 Remove a workflow.
 
 ```bash
-curl -X DELETE http://localhost:3000/workflows/<id>
+curl -X DELETE http://localhost:3000/workflows/e26d5294-f540-45a8-9d95-b5d94bab5d23
 ```
