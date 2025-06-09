@@ -32,6 +32,30 @@ server.get<{ Params: { id: string } }>('/workflows/:id', async (request, reply) 
   return workflow;
 });
 
+server.put<{ Params: { id: string }; Body: CreateWorkflowBody }>(
+  '/workflows/:id',
+  async (request, reply) => {
+    const { id } = request.params;
+    const { config } = request.body;
+    if (!config || config.id !== id) {
+      return reply.code(400).send({ error: 'config id mismatch' });
+    }
+    if (!workflows.has(id)) {
+      return reply.code(404).send({ error: 'not found' });
+    }
+    workflows.set(id, config);
+    return { id };
+  }
+);
+
+server.delete<{ Params: { id: string } }>('/workflows/:id', async (request, reply) => {
+  if (!workflows.has(request.params.id)) {
+    return reply.code(404).send({ error: 'not found' });
+  }
+  workflows.delete(request.params.id);
+  return reply.code(204).send();
+});
+
 server.post<{ Params: { id: string }; Body: { input?: any } }>('/workflows/:id/run', async (request, reply) => {
   const workflow = workflows.get(request.params.id);
   if (!workflow) {
