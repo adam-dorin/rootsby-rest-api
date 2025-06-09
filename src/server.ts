@@ -1,3 +1,6 @@
+import { WorkflowType } from "rootsby/types";
+import { z } from "zod";
+import { zodToJsonSchema } from "zod-to-json-schema";
 import Fastify from "fastify";
 import { Rootsby } from "rootsby/workflow";
 import { WorkflowEvent, type WorkflowConfig } from "rootsby/types";
@@ -8,18 +11,44 @@ const server = Fastify({ logger: true });
 
 const storage = new WorkflowStorage(process.env.WORKFLOWS_DIR || path.join(process.cwd(), "data"));
 
-interface CreateWorkflowBody {
-  config: WorkflowConfig;
-}
-
-server.post<{ Body: CreateWorkflowBody }>("/workflows", async (request, reply) => {
-  const { config } = request.body;
-  if (!config || !config.id) {
-    return reply.code(400).send({ error: "config with id required" });
-  }
-  await storage.save(config);
-  return reply.code(201).send({ id: config.id });
+const workflowConfigZod = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: z.nativeEnum(WorkflowType),
+  functions: z.array(z.any()),
 });
+
+const createWorkflowBodyZod = z.object({
+  config: workflowConfigZod,
+});
+export type CreateWorkflowBody = z.infer<typeof createWorkflowBodyZod>;
+
+const runWorkflowBodyZod = z.object({
+  input: z.any().optional(),
+});
+export type RunWorkflowBody = z.infer<typeof runWorkflowBodyZod>;
+
+const createWorkflowBodySchema = zodToJsonSchema(createWorkflowBodyZod);
+const runWorkflowBodySchema = zodToJsonSchema(runWorkflowBodyZod);
+
+server.post<{ Body: CreateWorkflowBody }>(
+  "/workflows",
+  {
+    schema: { body: createWorkflowBodySchema },
+  },
+  async (request, reply) => {
+    const parsed = createWorkflowBodyZod.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: "invalid body" });
+    }
+    const { config } = request.body;
+    if (!config || !config.id) {
+      return reply.code(400).send({ error: "config with id required" });
+    }
+    await storage.save(config);
+    return reply.code(201).send({ id: config.id });
+  }
+);
 
 server.get("/workflows", async () => {
   return storage.list();
@@ -33,7 +62,6 @@ server.get<{ Params: { id: string } }>("/workflows/:id", async (request, reply) 
   return workflow;
 });
 
-// TODO: improve this
 server.put<{ Params: { id: string }; Body: CreateWorkflowBody }>("/workflows/:id", async (request, reply) => {
   const { id } = request.params;
   const { config } = request.body;
@@ -41,6 +69,7 @@ server.put<{ Params: { id: string }; Body: CreateWorkflowBody }>("/workflows/:id
     return reply.code(400).send({ error: "config id mismatch" });
   }
   const workflow = await storage.get(id);
+  // This beaks tests
   // if (!workflow) {
   //   return reply.code(404).send({ error: "not found" });
   // }
@@ -62,22 +91,32 @@ server.delete<{ Params: { id: string } }>("/workflows/:id", async (request, repl
   return reply.code(204).send();
 });
 
-server.post<{ Params: { id: string }; Body: { input?: any } }>("/workflows/:id/run", async (request, reply) => {
-  const workflow = await storage.get(request.params.id);
-  if (!workflow) {
-    return reply.code(404).send({ error: "not found" });
+server.post<{ Params: { id: string }; Body: RunWorkflowBody }>(
+  "/workflows/:id/run",
+  {
+    schema: { body: runWorkflowBodySchema },
+  },
+  async (request, reply) => {
+    const workflow = await storage.get(request.params.id);
+    if (!workflow) {
+      return reply.code(404).send({ error: "not found" });
+    }
+    const parsed = runWorkflowBodyZod.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: "invalid body" });
+    }
+    const rootsby = new Rootsby();
+    const events: any[] = [];
+    rootsby.progress({
+      events: [WorkflowEvent.startWorkflow, WorkflowEvent.endWorkflow, WorkflowEvent.startStep, WorkflowEvent.endStep],
+      handler: (eventName: any, data: any) => {
+        events.push({ event: eventName, data });
+      },
+    });
+    const result = await rootsby.runWorkflow(workflow, parsed.data.input);
+    return { result, events };
   }
-  const rootsby = new Rootsby();
-  const events: any[] = [];
-  rootsby.progress({
-    events: [WorkflowEvent.startWorkflow, WorkflowEvent.endWorkflow, WorkflowEvent.startStep, WorkflowEvent.endStep],
-    handler: (eventName: any, data: any) => {
-      events.push({ event: eventName, data });
-    },
-  });
-  const result = await rootsby.runWorkflow(workflow, request.body.input);
-  return { result, events };
-});
+);
 
 export default server;
 

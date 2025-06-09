@@ -65,59 +65,90 @@ tap.test("create and run workflow", async (t) => {
   await server.close();
 });
 
-tap.test("workflow persists across server instances", async (t) => {
-  const dir = t.testdir();
-  const server1 = createServer(dir);
-  const res = await server1.inject({
+tap.test("reject invalid workflow creation", async (t) => {
+  const res = await server.inject({
     method: "POST",
     url: "/workflows",
-    payload: { config },
+    payload: { config: {} },
   });
-  t.equal(res.statusCode, 201, "workflow stored");
-  await server1.close();
-
-  const server2 = createServer(dir);
-  const listRes = await server2.inject({ method: "GET", url: "/workflows" });
-  t.same(
-    listRes.json().map((w: any) => w.id),
-    [config.id],
-    "listed after restart"
-  );
-
-  const getRes = await server2.inject({ method: "GET", url: `/workflows/${config.id}` });
-  const stored = getRes.json();
-  t.equal(stored.id, config.id, "id persisted");
-  t.equal(stored.name, config.name, "name persisted");
-  t.equal(stored.functions.length, config.functions.length, "functions count persisted");
-  await server2.close();
+  t.equal(res.statusCode, 400, "invalid body rejected");
 });
 
-tap.test("update workflow", async (t) => {
-  const updatedConfig = { ...config, name: "updated" };
-  const updateRes = await server.inject({
-    method: "PUT",
-    url: `/workflows/${config.id}`,
-    payload: { config: updatedConfig },
+tap.test("reject invalid run payload", async (t) => {
+  await server.inject({ method: "POST", url: "/workflows", payload: { config } });
+  const res = await server.inject({
+    method: "POST",
+    url: `/workflows/${config.id}/run`,
+    payload: '"not an object"',
+    headers: { "content-type": "application/json" },
   });
-  t.equal(updateRes.statusCode, 200, "workflow updated");
+  t.equal(res.statusCode, 400, "invalid body rejected");
 
-  const getRes = await server.inject({
-    method: "GET",
-    url: `/workflows/${config.id}`,
-  });
-  t.equal(getRes.json().name, "updated", "workflow replaced");
-});
+  tap.test("update workflow", async (t) => {
+    const updatedConfig = { ...config, name: "updated" };
+    tap.test("workflow persists across server instances", async (t) => {
+      const dir = t.testdir();
+      const server1 = createServer(dir);
+      const res = await server1.inject({
+        method: "POST",
+        url: "/workflows",
+        payload: { config },
+      });
+      t.equal(res.statusCode, 201, "workflow stored");
+      await server1.close();
 
-tap.test("delete workflow", async (t) => {
-  const delRes = await server.inject({
-    method: "DELETE",
-    url: `/workflows/${config.id}`,
-  });
-  t.equal(delRes.statusCode, 204, "workflow deleted");
+      const server2 = createServer(dir);
+      const listRes = await server2.inject({ method: "GET", url: "/workflows" });
+      t.same(
+        listRes.json().map((w: any) => w.id),
+        [config.id],
+        "listed after restart"
+      );
 
-  const getRes = await server.inject({
-    method: "GET",
-    url: `/workflows/${config.id}`,
+      const getRes = await server2.inject({ method: "GET", url: `/workflows/${config.id}` });
+      const stored = getRes.json();
+      t.equal(stored.id, config.id, "id persisted");
+      t.equal(stored.name, config.name, "name persisted");
+      t.equal(stored.functions.length, config.functions.length, "functions count persisted");
+      await server2.close();
+    });
+
+    tap.test("update workflow", async (t) => {
+      const updatedConfig = { ...config, name: "updated" };
+      const updateRes = await server.inject({
+        method: "PUT",
+        url: `/workflows/${config.id}`,
+        payload: { config: updatedConfig },
+      });
+      t.equal(updateRes.statusCode, 200, "workflow updated");
+
+      const getRes = await server.inject({
+        method: "GET",
+        url: `/workflows/${config.id}`,
+      });
+      t.equal(getRes.json().name, "updated", "workflow replaced");
+    });
+
+    tap.test("delete workflow", async (t) => {
+      const getRes = await server.inject({
+        method: "GET",
+        url: `/workflows/${config.id}`,
+      });
+      t.equal(getRes.json().name, "updated", "workflow replaced");
+    });
+
+    tap.test("delete workflow", async (t) => {
+      const delRes = await server.inject({
+        method: "DELETE",
+        url: `/workflows/${config.id}`,
+      });
+      t.equal(delRes.statusCode, 204, "workflow deleted");
+
+      const getRes = await server.inject({
+        method: "GET",
+        url: `/workflows/${config.id}`,
+      });
+      t.equal(getRes.statusCode, 404, "workflow no longer exists");
+    });
   });
-  t.equal(getRes.statusCode, 404, "workflow no longer exists");
 });
