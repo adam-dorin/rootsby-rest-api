@@ -56,3 +56,23 @@ tap.test('create and run workflow', async t => {
     'events order'
   );
 });
+
+tap.test('reject invalid workflow creation', async t => {
+  const res = await server.inject({
+    method: 'POST',
+    url: '/workflows',
+    payload: { config: {} },
+  });
+  t.equal(res.statusCode, 400, 'invalid body rejected');
+});
+
+tap.test('reject invalid run payload', async t => {
+  await server.inject({ method: 'POST', url: '/workflows', payload: { config } });
+  const res = await server.inject({
+    method: 'POST',
+    url: `/workflows/${config.id}/run`,
+    payload: '"not an object"',
+    headers: { 'content-type': 'application/json' },
+  });
+  t.equal(res.statusCode, 400, 'invalid body rejected');
+});

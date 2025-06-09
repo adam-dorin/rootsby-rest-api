@@ -1,21 +1,43 @@
 import Fastify from 'fastify';
 import { Rootsby } from 'rootsby/workflow';
 import type { WorkflowConfig } from 'rootsby/types';
+import { WorkflowType } from 'rootsby/types';
+import { z } from 'zod';
+import { zodToJsonSchema } from 'zod-to-json-schema';
 
 const server = Fastify({ logger: true });
 
 // simple in-memory store
 const workflows = new Map<string, WorkflowConfig>();
 
-interface CreateWorkflowBody {
-  config: WorkflowConfig;
-}
+const workflowConfigZod = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: z.nativeEnum(WorkflowType),
+  functions: z.array(z.any()),
+});
 
-server.post<{ Body: CreateWorkflowBody }>('/workflows', async (request, reply) => {
-  const { config } = request.body;
-  if (!config || !config.id) {
-    return reply.code(400).send({ error: 'config with id required' });
+const createWorkflowBodyZod = z.object({
+  config: workflowConfigZod,
+});
+export type CreateWorkflowBody = z.infer<typeof createWorkflowBodyZod>;
+
+const runWorkflowBodyZod = z.object({
+  input: z.any().optional(),
+});
+export type RunWorkflowBody = z.infer<typeof runWorkflowBodyZod>;
+
+const createWorkflowBodySchema = zodToJsonSchema(createWorkflowBodyZod);
+const runWorkflowBodySchema = zodToJsonSchema(runWorkflowBodyZod);
+
+server.post<{ Body: CreateWorkflowBody }>('/workflows', {
+  schema: { body: createWorkflowBodySchema },
+}, async (request, reply) => {
+  const parsed = createWorkflowBodyZod.safeParse(request.body);
+  if (!parsed.success) {
+    return reply.code(400).send({ error: 'invalid body' });
   }
+  const { config } = parsed.data;
   workflows.set(config.id, config);
   return reply.code(201).send({ id: config.id });
 });
@@ -32,10 +54,16 @@ server.get<{ Params: { id: string } }>('/workflows/:id', async (request, reply) 
   return workflow;
 });
 
-server.post<{ Params: { id: string }; Body: { input?: any } }>('/workflows/:id/run', async (request, reply) => {
+server.post<{ Params: { id: string }; Body: RunWorkflowBody }>('/workflows/:id/run', {
+  schema: { body: runWorkflowBodySchema },
+}, async (request, reply) => {
   const workflow = workflows.get(request.params.id);
   if (!workflow) {
     return reply.code(404).send({ error: 'not found' });
+  }
+  const parsed = runWorkflowBodyZod.safeParse(request.body);
+  if (!parsed.success) {
+    return reply.code(400).send({ error: 'invalid body' });
   }
   const rootsby = new Rootsby();
   const events: any[] = [];
@@ -50,7 +78,7 @@ server.post<{ Params: { id: string }; Body: { input?: any } }>('/workflows/:id/r
       events.push({ event: eventName, data });
     },
   });
-  const result = await rootsby.runWorkflow(workflow, request.body.input);
+  const result = await rootsby.runWorkflow(workflow, parsed.data.input);
   return { result, events };
 });
 
