@@ -65,6 +65,20 @@ tap.test("create and run workflow", async (t) => {
   await server.close();
 });
 
+tap.test("update missing workflow returns 404", async (t) => {
+  const dir = t.testdir();
+  const srv = createServer(dir);
+  const missingId = crypto.randomUUID();
+  const missingConfig = { ...config, id: missingId };
+  const res = await srv.inject({
+    method: "PUT",
+    url: `/workflows/${missingId}`,
+    payload: { config: missingConfig },
+  });
+  t.equal(res.statusCode, 404, "update rejected for missing workflow");
+  await srv.close();
+});
+
 tap.test("reject invalid workflow creation", async (t) => {
   const res = await server.inject({
     method: "POST",
