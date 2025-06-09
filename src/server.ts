@@ -57,7 +57,9 @@ server.post<{ Params: { id: string }; Body: { input?: any } }>('/workflows/:id/r
 export default server;
 
 if (require.main === module) {
-  server.listen({ port: 3000, host: '0.0.0.0' }).catch(err => {
+  const port = parseInt(process.env.PORT ?? '3000', 10);
+  const host = process.env.HOST ?? '0.0.0.0';
+  server.listen({ port, host }).catch(err => {
     server.log.error(err);
     process.exit(1);
   });

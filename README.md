@@ -11,6 +11,21 @@ The application is developed and tested against the current Node.js LTS (v22).
 - `npm start` – run the compiled server.
 - `npm test` – build the project and run integration tests with `tap`.
 
+## Configuration
+
+The server listens on the host and port specified by the environment variables:
+
+- `HOST` – defaults to `0.0.0.0`.
+- `PORT` – defaults to `3000`.
+
+For example:
+
+```bash
+HOST=127.0.0.1 PORT=8080 npm start
+```
+
+will start the server on `http://127.0.0.1:8080`.
+
 ## Endpoints
 
 ### `POST /workflows`
