@@ -44,20 +44,51 @@ Create a workflow by providing a Rootsby `WorkflowConfig` in the body:
   }
 }
 ```
+Example request:
+
+```bash
+curl -X POST http://localhost:3000/workflows \
+  -H "Content-Type: application/json" \
+  -d '{"config": {"id":"<uuid>","name":"test","type":"ShortRunning","functions":[]}}'
+```
 
 ### `GET /workflows`
 List all stored workflows.
 
+```bash
+curl http://localhost:3000/workflows
+```
+
 ### `GET /workflows/:id`
 Retrieve a single workflow configuration.
+
+```bash
+curl http://localhost:3000/workflows/<id>
+```
 
 ### `POST /workflows/:id/run`
 Execute a workflow. Optional input can be passed as `{ "input": { ... } }`.
 Events generated during execution are returned in the response.
 
+```bash
+curl -X POST http://localhost:3000/workflows/<id>/run \
+  -H "Content-Type: application/json" \
+  -d '{"input":{}}'
+```
+
 ### `PUT /workflows/:id`
 Replace an existing workflow configuration. The body is identical to the
 creation endpoint and the `id` must match the path parameter.
 
+```bash
+curl -X PUT http://localhost:3000/workflows/<id> \
+  -H "Content-Type: application/json" \
+  -d '{"config":{...}}'
+```
+
 ### `DELETE /workflows/:id`
 Remove a workflow.
+
+```bash
+curl -X DELETE http://localhost:3000/workflows/<id>
+```
