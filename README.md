@@ -36,3 +36,10 @@ Retrieve a single workflow configuration.
 ### `POST /workflows/:id/run`
 Execute a workflow. Optional input can be passed as `{ "input": { ... } }`.
 Events generated during execution are returned in the response.
+
+### `PUT /workflows/:id`
+Replace an existing workflow configuration. The body is identical to the
+creation endpoint and the `id` must match the path parameter.
+
+### `DELETE /workflows/:id`
+Remove a workflow.
