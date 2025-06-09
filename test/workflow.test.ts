@@ -75,4 +75,34 @@ tap.test('reject invalid run payload', async t => {
     headers: { 'content-type': 'application/json' },
   });
   t.equal(res.statusCode, 400, 'invalid body rejected');
+
+tap.test('update workflow', async t => {
+  const updatedConfig = { ...config, name: 'updated' };
+  const updateRes = await server.inject({
+    method: 'PUT',
+    url: `/workflows/${config.id}`,
+    payload: { config: updatedConfig },
+  });
+  t.equal(updateRes.statusCode, 200, 'workflow updated');
+
+  const getRes = await server.inject({
+    method: 'GET',
+    url: `/workflows/${config.id}`,
+  });
+  t.equal(getRes.json().name, 'updated', 'workflow replaced');
+});
+
+tap.test('delete workflow', async t => {
+  const delRes = await server.inject({
+    method: 'DELETE',
+    url: `/workflows/${config.id}`,
+  });
+  t.equal(delRes.statusCode, 204, 'workflow deleted');
+
+  const getRes = await server.inject({
+    method: 'GET',
+    url: `/workflows/${config.id}`,
+  });
+  t.equal(getRes.statusCode, 404, 'workflow no longer exists');
+
 });

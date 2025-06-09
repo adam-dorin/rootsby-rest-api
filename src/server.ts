@@ -54,9 +54,34 @@ server.get<{ Params: { id: string } }>('/workflows/:id', async (request, reply) 
   return workflow;
 });
 
+
 server.post<{ Params: { id: string }; Body: RunWorkflowBody }>('/workflows/:id/run', {
   schema: { body: runWorkflowBodySchema },
 }, async (request, reply) => {
+
+server.put<{ Params: { id: string }; Body: CreateWorkflowBody }>(
+  '/workflows/:id',
+  async (request, reply) => {
+    const { id } = request.params;
+    const { config } = request.body;
+    if (!config || config.id !== id) {
+      return reply.code(400).send({ error: 'config id mismatch' });
+    }
+    if (!workflows.has(id)) {
+      return reply.code(404).send({ error: 'not found' });
+    }
+    workflows.set(id, config);
+    return { id };
+  }
+);
+
+server.delete<{ Params: { id: string } }>('/workflows/:id', async (request, reply) => {
+  if (!workflows.has(request.params.id)) {
+    return reply.code(404).send({ error: 'not found' });
+  }
+  workflows.delete(request.params.id);
+  return reply.code(204).send();
+});
   const workflow = workflows.get(request.params.id);
   if (!workflow) {
     return reply.code(404).send({ error: 'not found' });
@@ -85,7 +110,9 @@ server.post<{ Params: { id: string }; Body: RunWorkflowBody }>('/workflows/:id/r
 export default server;
 
 if (require.main === module) {
-  server.listen({ port: 3000, host: '0.0.0.0' }).catch(err => {
+  const port = parseInt(process.env.PORT ?? '3000', 10);
+  const host = process.env.HOST ?? '0.0.0.0';
+  server.listen({ port, host }).catch(err => {
     server.log.error(err);
     process.exit(1);
   });
