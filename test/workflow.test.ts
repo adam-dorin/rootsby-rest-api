@@ -129,7 +129,7 @@ tap.test("reject invalid run payload", async (t) => {
       t.equal(getRes.json().name, "updated", "workflow replaced");
     });
 
-    tap.test("delete workflow", async (t) => {
+    tap.test("get workflow after update", async (t) => {
       const getRes = await server.inject({
         method: "GET",
         url: `/workflows/${config.id}`,
